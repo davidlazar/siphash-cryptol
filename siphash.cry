@@ -1,0 +1,62 @@
+/* Cryptol specification of the SipHash function.
+ * Author: David Lazar <lazar6@illinois.edu>
+ * License: MIT
+ */
+
+sipHash : {b cw dw} (fin b, 8*(b/8)-b+7 >= 0) => [cw] -> [dw] -> [128] -> [b][8] -> [64];
+sipHash c d k m = finalize d (update c (parse m) (init k));
+
+initStr : [32][8];
+initStr = "somepseudorandomlygeneratedbytes";
+
+init : [128] -> [4][64];
+init k = [k0 k1 k0 k1] ^ iv
+  where {
+    [k0 k1] = split k;
+    iv = [| join (reverse x) || x <- groupBy(8, initStr) |];
+  };
+
+update : {a w} [a] -> [w][64] -> [4][64] -> [4][64];
+update c ms v' = rounds @ width ms
+  where {
+    rounds = [v'] # [| compress c m v || v <- rounds || m <- ms |];
+  };
+
+compress : {a} [a] -> [64] -> [4][64] -> [4][64];
+compress c m [v0 v1 v2 v3] = [(v0' ^ m) v1' v2' v3']
+  where {
+    [v0' v1' v2' v3'] = sipRounds [v0 v1 v2 (v3 ^ m)] @ c;
+  };
+
+finalize : {a} [a] -> [4][64] -> [64];
+finalize d [v0 v1 v2 v3] = v0' ^ v1' ^ v2' ^ v3'
+  where {
+    [v0' v1' v2' v3'] = sipRounds [v0 v1 (v2 ^ 0xff) v3] @ d;
+  };
+
+parse : {a} (fin a, 8*(a/8)-a+7 >= 0) => [a][8] -> [a/8 + 1][64];
+parse m = [| join x || x <- groupBy (8, pad m) |];
+
+// TODO why is the 8*(a/8)-a+7 >= 0 constraint needed?
+pad : {a} (fin a, 8*(a/8)-a+7 >= 0) => [a][8] -> [8 * (a/8 + 1)][8];
+pad m = m # zero # [b]
+  where {
+    // TODO this is clunky; how to improve it?
+    b = (width m % 256) @@ [0..7];
+  };
+
+sipRounds : [4][64] -> [inf][4][64];
+sipRounds v' = rounds
+  where {
+    rounds = [v'] # [| sipRound v || v <- rounds |];
+  };
+
+sipRound : [4][64] -> [4][64];
+sipRound [v0 v1 v2 v3] = [v0_3 v1_4 v2_3 v3_4]
+  where {
+    v0_1 = v0 + v1;  v1_1 = v1 <<< 13;  v1_2 = v1_1 ^ v0_1;  v0_2 = v0_1 <<< 32;
+    v2_1 = v2 + v3;  v3_1 = v3 <<< 16;  v3_2 = v3_1 ^ v2_1;
+
+    v0_3 = v0_2 + v3_2;  v3_3 = v3_2 <<< 21;  v3_4 = v3_3 ^ v0_3;
+    v2_2 = v2_1 + v1_2;  v1_3 = v1_2 <<< 17;  v1_4 = v1_3 ^ v2_2;  v2_3 = v2_2 <<< 32;
+  };
