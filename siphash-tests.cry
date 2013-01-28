@@ -8,10 +8,10 @@ refKey : [128];
 refKey = join [0..15];
 
 // the example from the paper
-t0 = sipHash 2 4 refKey [0..14] == 0xa129ca6149be45e5;
+t0 = sipHash (2, 4, refKey, [0..14]) == 0xa129ca6149be45e5;
 
 // simple case
-t1 = sipHash 2 4 zero [] == 0x1e924b9d737700d7;
+t1 = sipHash (2, 4, zero, []) == 0x1e924b9d737700d7;
 
 /*
 Would like to write something like this to test the refVectors
@@ -26,12 +26,12 @@ Ideas?
 */
 
 // For now, we'll only test a few of them:
-t2 = sipHash 2 4 refKey [] == join (refVectors @ 0);
-t3 = sipHash 2 4 refKey [0] == join (refVectors @ 1);
-t4 = sipHash 2 4 refKey [0 1] == join (refVectors @ 2);
-t5 = sipHash 2 4 refKey [0 .. 60] == join (refVectors @ 61);
-t6 = sipHash 2 4 refKey [0 .. 61] == join (refVectors @ 62);
-t7 = sipHash 2 4 refKey [0 .. 62] == join (refVectors @ 63);
+t2 = sipHash (2, 4, refKey, []) == join (refVectors @ 0);
+t3 = sipHash (2, 4, refKey, [0]) == join (refVectors @ 1);
+t4 = sipHash (2, 4, refKey, [0 1]) == join (refVectors @ 2);
+t5 = sipHash (2, 4, refKey, [0 .. 60]) == join (refVectors @ 61);
+t6 = sipHash (2, 4, refKey, [0 .. 61]) == join (refVectors @ 62);
+t7 = sipHash (2, 4, refKey, [0 .. 62]) == join (refVectors @ 63);
 
 refVectors : [64][8][8];
 refVectors = [

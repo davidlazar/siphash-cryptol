@@ -3,8 +3,8 @@
  * License: MIT
  */
 
-sipHash : {b cw dw} (fin b, 8*(b/8)-b+7 >= 0) => [cw] -> [dw] -> [128] -> [b][8] -> [64];
-sipHash c d k m = finalize d (update c (parse m) (init k));
+sipHash : {b cw dw} (fin b, 8*(b/8)-b+7 >= 0) => ([cw], [dw], [128], [b][8]) -> [64];
+sipHash (c, d, k, m) = finalize (d, (update (c, parse m, init k)));
 
 initStr : [32][8];
 initStr = "somepseudorandomlygeneratedbytes";
@@ -16,20 +16,20 @@ init k = [k0 k1 k0 k1] ^ iv
     iv = [| join (reverse x) || x <- groupBy(8, initStr) |];
   };
 
-update : {a w} [a] -> [w][64] -> [4][64] -> [4][64];
-update c ms v' = rounds @ width ms
+update : {a w} ([a], [w][64], [4][64]) -> [4][64];
+update (c, ms, v') = rounds @ width ms
   where {
-    rounds = [v'] # [| compress c m v || v <- rounds || m <- ms |];
+    rounds = [v'] # [| compress (c, m, v) || v <- rounds || m <- ms |];
   };
 
-compress : {a} [a] -> [64] -> [4][64] -> [4][64];
-compress c m [v0 v1 v2 v3] = [(v0' ^ m) v1' v2' v3']
+compress : {a} ([a], [64], [4][64]) -> [4][64];
+compress (c, m, [v0 v1 v2 v3]) = [(v0' ^ m) v1' v2' v3']
   where {
     [v0' v1' v2' v3'] = sipRounds [v0 v1 v2 (v3 ^ m)] @ c;
   };
 
-finalize : {a} [a] -> [4][64] -> [64];
-finalize d [v0 v1 v2 v3] = v0' ^ v1' ^ v2' ^ v3'
+finalize : {a} ([a], [4][64]) -> [64];
+finalize (d, [v0 v1 v2 v3]) = v0' ^ v1' ^ v2' ^ v3'
   where {
     [v0' v1' v2' v3'] = sipRounds [v0 v1 (v2 ^ 0xff) v3] @ d;
   };
