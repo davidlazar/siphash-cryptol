@@ -42,7 +42,7 @@ pad : {a} (fin a, 8*(a/8)-a+7 >= 0) => [a][8] -> [8 * (a/8 + 1)][8];
 pad m = m # zero # [b]
   where {
     // TODO this is clunky; how to improve it?
-    b = (width m % 256) @@ [0..7];
+    b = (`a % 256) @@ [0..7];
   };
 
 sipRounds : [4][64] -> [inf][4][64];
